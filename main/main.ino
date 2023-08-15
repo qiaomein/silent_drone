@@ -11,11 +11,12 @@ const float pi = PI;
 const int startuppwm = 31936;
 
 // declarations
-int refpwm = startuppwm+6;
+int refpwm = startuppwm+3;
 
-int pwm2, pwmphasereading, tpwm;
-float error, cumerror, errorp, cumerrorp, derror, preverror;
-unsigned long t, tprior, dt; // for tracking loop time
+
+int pwm2, pwmphasereading, pwmphase, tpwm, xornow, xorprior;
+float error, cumerror, errorp, cumerrorp, derror, preverror, xor_rate;
+unsigned long t, tprior, dt, dtxor, d0xor; // for tracking loop time
 
 // volatile variables
 volatile unsigned long dt2, d02, dt24, d024, time_shift;
@@ -61,6 +62,8 @@ void loop() {
 
 
   t = micros();
+  reading2 = digitalRead(tachpin2);
+  reading4 = digitalRead(tachpin4);
 
 
   if ((t - tprior) >= 1e6 / samplefreq) { // set constant sampling time for the controller
@@ -96,25 +99,38 @@ void loop() {
     phase4 = fmod(phase4, 360.0);
 
 
-    Serial.print(t);
-    Serial.print(",");
-    Serial.print(digitalRead(tachpin2));
-    Serial.print(',');
-    Serial.print(digitalRead(tachpin4));
-    Serial.print(',');
-    Serial.print(pwm2);
-    Serial.print(",");
-    Serial.print(1.0e6 / dt);
-    Serial.print(",");
-    Serial.print(error);
-    Serial.print(',');    
-    Serial.println(errorp);
+    xornow = XOR(reading2, reading4);
+    if (xorprior == 0 && xornow == 1) // if xor is rising
+    {
+      dtxor = micros()-d0xor;
+      d0xor = micros();
+      xor_rate = 1.0/(dtxor*1e-6);
+    }
+
+
     // phases are in degrees
 
 
     tprior = t;
     preverror = error;
+    xorprior = xornow;
   }
+
+  Serial.print(t);
+  Serial.print(",");
+  Serial.print(reading2);
+  Serial.print(',');
+  Serial.print(reading4);
+  Serial.print(',');
+  Serial.print(xornow);
+  Serial.print(",");
+  Serial.print(xor_rate);
+  Serial.print(",");
+  Serial.print(1.0e6 / dt);
+  Serial.print(",");
+  Serial.print(error);
+  Serial.print(',');    
+  Serial.println(errorp);
 }
 
 void tach() {
@@ -123,7 +139,6 @@ void tach() {
   dt2 = micros() - d02;
   d02 = micros();
   rpm = 1.0 * 60 / (dt2 * 1e-6);
-  //reading2 = 1;
   phase = 0;
 }
 
