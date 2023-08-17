@@ -80,16 +80,16 @@ def plot_loudness(y, sr, filename):
     average_loudness = np.mean(loudness_db)
 
     # Create a histogram with 100 bins
-    hist, bin_edges = np.histogram(loudness_db, bins=100)
+    # hist, bin_edges = np.histogram(loudness_db, bins=100)
 
-    # Find the bin with the highest frequency
-    most_common_bin = np.argmax(hist)
-
-    # Get the range of loudness levels for that bin
-    most_common_range = (bin_edges[most_common_bin], bin_edges[most_common_bin + 1])
-
-    # Print the result
-    print(f"The most common loudness level is between {most_common_range[0]:.2f} dB and {most_common_range[1]:.2f} dB.")
+    # # Find the bin with the highest frequency
+    # most_common_bin = np.argmax(hist)
+    #
+    # # Get the range of loudness levels for that bin
+    # most_common_range = (bin_edges[most_common_bin], bin_edges[most_common_bin + 1])
+    #
+    # # Print the result
+    # print(f"The most common loudness level is between {most_common_range[0]:.2f} dB and {most_common_range[1]:.2f} dB.")
 
     # Optional: Plot the histogram
     plt.hist(loudness_db.flatten(), bins=100)
