@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from scipy import fft
 
 #### SETTINGS #########
-timeframe = 50 # seconds to record
+timeframe = 25 # seconds to record
 port_name = "COM7"
 baudrate = 2000000
 interval = 10
@@ -59,28 +59,45 @@ while t < timeframe*1e6: # in microseconds
     #t, tach2, tach4, pwm, error, cumerror, rpm2, rpm4 = list(map(float,Sdata))
     #print(Sdata)
     try:
-        t, reading, theta, rpm, sr = list(map(float,Sdata))
+        t, reading, theta, rpm, refpwm, sr = list(map(float,Sdata))
     except:
-        t, reading, theta, rpm, sr = [0] * 5
+        t, reading, theta, rpm, refpwm, sr = [0] * 6
         print("except!")
     cmd = "29\r"
     
-    if trigger(t) and flag:
-        print(t, cmd)
-        arduino.write(cmd.encode())
-        flag = False
-    rawdata.append([t,reading,theta,rpm,sr]) #time, pwm, error, cumerror, rpm2, rpm4
-    
-    #print(t)
+    rawdata.append([t,reading,theta,rpm,refpwm, sr]) #time, pwm, error, cumerror, rpm2, rpm4
 
-arduino.write("-29\r".encode())
+
 rawdata = np.array(rawdata)
 #%%
 
 plt.figure()
-tplot, reading,theta,rpm,sr = [rawdata[:,i] for i in range(5)]
-plt.plot(tplot*1e-6,theta)
+tplot, reading,theta,rpm, refpwm, sr = [rawdata[:,i] for i in range(6)]
+tplot = tplot*1e-6
+
+plt.plot(tplot,theta)
 plt.figure()
-plt.plot(tplot*1e-6,rpm)
+a,b = [14.95,15.5]
+tplotcut = tplot[tplot < b]
+rpmcut = rpm[tplot < b]
+refcut = refpwm[tplot< b]
+rpmcut = rpmcut[tplotcut> a]
+refcut = refcut[tplotcut > a]
+tplotcut = tplotcut[tplotcut > a]
+
+
+bias = rpmcut[0]
+
+k = (rpmcut[-1]-bias)/15
+
+plt.figure()
+response = rpmcut-bias
+u =  k*(refcut-refcut[0])
+plt.plot(tplotcut, response)
+plt.plot(tplotcut, u)
+plt.axhline(.63*u[-1])
+tau = tplotcut[response>=.63*u[-1]][0]- tplotcut[0]
+
+print("K: ", k, "tau: ", tau)
 
 # %%
