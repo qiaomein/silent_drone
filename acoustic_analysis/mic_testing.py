@@ -6,6 +6,8 @@ import librosa
 import os
 import pandas as pd
 
+path = "E"
+a,b = [50,2000]
 
 def plot_raw(rate, data, filename):
     plt.figure()
@@ -19,9 +21,13 @@ def plot_raw(rate, data, filename):
 
 
 def plot_fft(rate, data, filename):
+    global a,b
+
+
     plt.figure()
     if len(data.shape) == 2:
         data = data.mean(axis=1)
+    
 
     # Apply Fast Fourier Transform (FFT)
     y_fft = fft(data)
@@ -30,7 +36,15 @@ def plot_fft(rate, data, filename):
     y_fft = np.abs(y_fft[:len(y_fft) // 2])
 
     # Create a frequency axis
-    freqs = np.fft.fftfreq(len(y_fft) * 2, 1 / rate)[:len(y_fft)]
+    freqsx = np.fft.fftfreq(len(y_fft) * 2, 1 / rate)[:len(y_fft)]
+
+    freqs = freqsx[ freqsx > a]
+    y_fft = y_fft[freqsx > a]
+    y_fft = y_fft[freqs < b]
+    freqs = freqs[ freqs < b]
+    
+
+
 
     dominant_frequency = round(freqs[np.argmax(y_fft)], 3)
 
@@ -47,6 +61,7 @@ def plot_fft(rate, data, filename):
 
 
 def plot_spectrogram(y, sr, filename):
+    global a,b
     plt.figure(figsize=(10, 4))
     D = librosa.stft(y)  # Short-time Fourier transform
     librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max),
@@ -86,7 +101,9 @@ def plot_loudness(y, sr, filename):
 
 
 def process_files(folder_path):
-    for filename in os.listdir(folder_path):
+    l = os.listdir(folder_path)[-1:]
+    for i in range(len(l)):
+        filename = l[i]
         if filename.endswith(".WAV"):
             filepath = os.path.join(folder_path, filename)
             print(f"Processing file: {filepath}")
@@ -107,7 +124,7 @@ def process_files(folder_path):
 def main():
     plt.rcParams["figure.figsize"] = [7.50, 3.50]
     plt.rcParams["figure.autolayout"] = True
-    pathname_ref = "E:\STEREO\FOLDER01"
+    pathname_ref = f"{path}:\STEREO\FOLDER01"
     process_files(pathname_ref)
 
 
