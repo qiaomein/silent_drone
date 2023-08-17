@@ -17,6 +17,7 @@ int refpwm = startuppwm+4;
 
 int pwm2, pwmphasereading, pwmphase, tpwm, xornow, xorprior;
 float error, cumerror, errorp, cumerrorp, derror, preverror, xor_rate;
+float theta;
 unsigned long t, tprior, dt, dtxor, d0xor; // for tracking loop time
 
 // volatile variables
@@ -53,124 +54,38 @@ void setup() {
 
 void loop() {
 
-  // serial input sets the reference pwm to power the reference motor
-  while (Serial.available() > 0)
-  {
-    int inputpwm = Serial.parseInt();
-    if (Serial.read() == '\n') {
-      refpwm = refpwm + inputpwm;
-    }
-  }
+  // // serial input sets the reference pwm to power the reference motor
+  // while (Serial.available() > 0)
+  // {
+  //   int inputpwm = Serial.parseInt();
+  //   if (Serial.read() == '\n') {
+  //     refpwm = refpwm + inputpwm;
+  //   }
+  // }
 
 
   t = micros();
-  reading2 = digitalRead(tachpin2);
   reading4 = digitalRead(tachpin4);
-  reading1 = digitalRead(tachpin1);
+
 
 
   if ((t - tprior) >= 1e6 / samplefreq) { // set constant sampling time for the controller
     drive(motor2pin, refpwm, pwmfreq); // drive the reference motor
 
-    if ((micros() - d02) > timeout * 1e6) {
-      rpm2 = 0;
-    }
     if ((micros() - d04) > timeout * 1e6) {
       rpm4 = 0;
     }
-    if ((micros() - d01) > timeout * 1e6) {
-      rpm1 = 0;
-    }
-    if ((micros() - d0xor) > timeout * 1e6) {
-      xor_rate = 0;
-    }
 
-    error = rpm2 - rpm1;
-    cumerror = constrain(cumerror + error, -5e5, 5e5);
-    derror = error - preverror;
-
-    pwm2 = refpwm + kp * error + ki * cumerror + kd * derror;
-
-
-    errorp = phase - phase4;
-    cumerrorp = cumerrorp + errorp;
-    pwmphase = kp * errorp + cumerrorp * ki;
-
-    pwm2 = constrain(pwm2, startuppwm-60, startuppwm + 60);
-    drive(motor4pin, pwm2, pwmfreq); // drive the following motor
-    //drive(motor4pin, refpwm, pwmfreq); // drive the following motor
-
-
-    
-
-    phase = phase + (dt * 1e-6 * rpm2) / 60.0 * 360.0;
-    phase = fmod(phase, 360.0);
-    phase4 = phase4 + (dt * 1e-6 * rpm4) / 60.0 * 360.0;
-    phase4 = fmod(phase4, 360.0);
-
-
-    xornow = XOR(reading2, reading1);
-    if (xorprior == 0 && xornow == 1) // if xor is rising
-    {
-      dtxor = micros()-d0xor;
-      d0xor = micros();
-      xor_rate = 60.0/(dtxor*1e-6);
-    }
-
-
-    // phases are in degrees
-
-    dt = t - tprior;
-    tprior = t;
-    preverror = error;
-    xorprior = xornow;
   }
 
+  sine_sweep();
 
-  Serial.print(t);
-  Serial.print(",");
-
-  Serial.print(reading1);
-  Serial.print(',');
-  Serial.print(reading2);
-  Serial.print(',');
-  Serial.print(pwm2);
-  Serial.print(',');
-  Serial.print(xornow);
-  Serial.print(",");
-  Serial.print(xor_rate);
-  Serial.print(",");
-  Serial.print(rpm1);
-  Serial.print(",");
-  Serial.print(rpm2);
-  Serial.print(",");
-  Serial.print(rpm4);
-  Serial.print(",");
-  Serial.print(1.0e6 / dt);
-  Serial.print(",");
-  Serial.println(error);
-}
-
-void tach2() {
-  //Serial.println("sensed!");
-
-  dt2 = micros() - d02;
-  d02 = micros();
-  rpm2 = 1.0 * 60 / (dt2 * 1e-6);
-  phase = 0;
 }
 
 void tach4() {
   dt4 = micros() - d04;
   d04 = micros();
   rpm4 = 1.0 * 60 / (dt4 * 1e-6);
-  phase4 = 0;
-}
-
-void tach1() {
-  dt1 = micros() - d01;
-  d01 = micros();
-  rpm1 = 1.0 * 60 / (dt1 * 1e-6);
   phase4 = 0;
 }
 
@@ -188,19 +103,22 @@ void startMotors(){
   delay(4000);
 }
 
-int XOR(int x, int y){
-  if (x == 1 && y == 1){
-    return 0;
-  }
-  else if (x == 1 || y == 1){
-    return 1;
-  }
-  return 0;
-}
-
 void sine_sweep() {
   for (int pwm = refpwm; pwm <= refpwm + 25; pwm + 6) {
-    analogWrite(motor2pin, pwm);
+    analogWrite(motor4pin, pwm);
+    theta = fmod(theta + dt*1e-6*rpm4*6, 36000); // theta fmod 100 revolutions
+
+    Serial.print(t);
+    Serial.print(',');
+    Serial.print(reading4);
+    Serial.print(",");
+    Serial.print(rpm4);
+    Serial.print(",");
+    Serial.print(theta);
+    Serial.print(",");
+    Serial.print(1.0e6 / dt);
+
+    delay(5000);
   }
   
 }

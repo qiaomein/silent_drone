@@ -9,7 +9,7 @@ from scipy import fft
 #### SETTINGS #########
 timeframe = 90  # seconds to record
 port_name = "COM7"
-baudrate = 115200
+baudrate = 2000000
 interval = 5
 
 ##########################
@@ -55,15 +55,15 @@ while t < timeframe * 1e6:  # in microseconds
     # t, tach2, tach4, pwm, error, cumerror, rpm2, rpm4 = list(map(float,Sdata))
     # print(Sdata)
     try:
-        t, tach2, tach4, pwm, error, rpm2, rpm4 = list(map(float, Sdata))
+        t, tach4, rpm4, theta, sr = list(map(float, Sdata))
     except:
-        t, tach2, tach4, pwm, error, rpm2, rpm4 = [0] * 7
+        t, tach4, rpm4, theta, sr = [0] * 4
         print("except!")
     cmd = "testing"
     if trigger(t):
         print("w_ref: ", w_ref)
         # arduino.write(cmd.encode())
-    rawdata.append([t, tach2, tach4])  # time, pwm, error, cumerror, rpm2, rpm4
+    rawdata.append([t, tach4, rpm4, theta])  # time, pwm, error, cumerror, rpm2, rpm4
 
     # print(t)
 
@@ -75,34 +75,28 @@ plt.figure()
 da = 3500
 a, b = [da, da + 500]
 tPlot = rawdata[a:b, 0] * 1e-6
-tach2 = rawdata[a:b, 1]
-tach4 = rawdata[a:b, 2]
-plt.plot(tPlot, tach2, tPlot, tach4)
-plt.xlabel("time [s]");
-plt.ylabel("tach readings")
-plt.legend(["tach2", "tach4"])
+tach4 = rawdata[a:b, 1]
 
-plt.figure()
-plt.plot(tPlot, tach2)
-plt.title("tach2")
 
 plt.figure()
 plt.plot(tPlot, tach4)
 plt.title("tach4")
+plt.xlabel("time [s]")
+plt.ylabel("tach readings")
 
 
-def xor(x, y):
-    n = len(x)
-    a = []
-    for i in range(n):
-        ans = int(x[i]) ^ int(y[i])
-        a.append(ans)
-    return a
+#def xor(x, y):
+#    n = len(x)
+#    a = []
+#    for i in range(n):
+#        ans = int(x[i]) ^ int(y[i])
+#        a.append(ans)
+#    return a
 
 
-x = xor(tach2, tach4)
+#x = xor(tach2, tach4)
 
-plt.figure()
-plt.plot(tPlot, x)
-plt.title("XOR")
+#plt.figure()
+#plt.plot(tplot, x)
+#plt.title("xor")
 # %%
