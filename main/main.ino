@@ -2,23 +2,25 @@
 // constants
 const int motor2pin = 9;
 const int motor4pin = 10;
-const int samplefreq = 200;
+const int samplefreq = 500;
 const int pwmfreq = 600;
 const int tachpin2 = 2;  //interruptpin
 const int tachpin4 = 3;  // interruptpin
 const int tachpin1 = 4;  // interruptpin
 const int timeout = 1;   // seconds before rpm = 0
 const int startuppwm = 31933;
-int refpwm = startuppwm + 4;
 const float alpha = .3;
 const int maxrotations = 5000;
-const int maxcum = 5e6;
+const int maxcum = 5e8;
 
 // declarations
 int pwm2, pwmphasereading, pwmphase, tpwm;
-
 float error, cumerror, preverror, derror, theta1, theta2;
 unsigned long t, tprior, dt, dtxor, d0xor;  // for tracking loop time
+bool reset1, reset2;
+
+int refpwm = startuppwm + 20;
+bool control = true;
 
 // volatile variables
 volatile unsigned long dt2, d02, dt1, d01, dt4, d04, time_shift;
@@ -31,10 +33,10 @@ int reading2, reading4, reading1;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Speed control
 float kp = 1;
-float ki = .2;
-float kd = .8;
+float ki = .0;
+float kd = .5;
 
-float k = .00055;  // overall gain
+float k = .00045;  // overall gain
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -79,15 +81,25 @@ void loop() {
       rpm1 = 0;
     }
     
+    if (reset1 != reset2){
+      control = false;
+    }
+    else{
+      control = true;
+    }
 
-    error = theta2 - theta1;
-    cumerror = constrain(cumerror + error,-maxcum,maxcum);
-    derror = error - preverror;
 
-    pwm2 = refpwm + k*(kp * error + ki*dt*1e-6*cumerror + kd * derror * 1e6 / dt);
+    if (control){
+      error = theta2 - theta1;
+      //error = rpm2 - rpm1;
+      cumerror = constrain(cumerror + error,-maxcum,maxcum);
+      derror = error - preverror;
+      pwm2 = refpwm + k*(kp * error + ki*dt*1e-6*cumerror + kd * derror * 1e6 / dt);
+    }
+    
 
 
-    pwm2 = constrain(pwm2, startuppwm - 10, startuppwm + 30);
+    pwm2 = constrain(pwm2, startuppwm - 10, startuppwm + 50);
     drive(motor4pin, pwm2, pwmfreq);  // drive the following motor
     //drive(motor4pin, refpwm, pwmfreq); // drive the following motor
 
@@ -95,8 +107,22 @@ void loop() {
     dt = t - tprior;
     tprior = t;
     preverror = error;
-    theta2 = fmod(theta2 + rpm2*6*dt*1e-6,maxrotations*360);
-    theta1 = fmod(theta1 + rpm1*6*dt*1e-6, maxrotations*360);
+    theta2 = theta2 + rpm2*6*dt*1e-6;
+    theta1 = theta1 + rpm1*6*dt*1e-6;
+
+    
+
+
+    if (theta2 >= maxrotations*360){
+      reset1 = !reset1;
+      theta2 = 0;
+    }
+
+
+    if (theta1 > maxrotations*360){
+      reset2 = !reset2;
+      theta1 = 0;
+    }
 
     Serial.print(t);
     Serial.print(",");
@@ -147,3 +173,5 @@ void startMotors() {
   drive(motor4pin, startuppwm, pwmfreq);
   delay(4000);
 }
+
+
