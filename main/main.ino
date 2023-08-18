@@ -9,17 +9,17 @@ const int tachpin4 = 3;  // interruptpin
 const int tachpin1 = 4;  // interruptpin
 const int timeout = 1;   // seconds before rpm = 0
 const int startuppwm = 31933;
-const float alpha = .3;
-const int maxrotations = 5000;
-const int maxcum = 5e8;
+const float alpha = .2;
+const unsigned int maxrotations = 5000000;
+const int maxcum = 5e9;
 
 // declarations
-int pwm2, pwmphasereading, pwmphase, tpwm;
+int pwm2, pwmphasereading, pwmphase, tpwm, offset;
 float error, cumerror, preverror, derror, theta1, theta2;
 unsigned long t, tprior, dt, dtxor, d0xor;  // for tracking loop time
 bool reset1, reset2;
 
-int refpwm = startuppwm + 21;
+int refpwm = startuppwm ;
 bool control = true;
 
 // volatile variables
@@ -33,7 +33,8 @@ int reading2, reading4, reading1;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Speed control
 float kp = 1;
-float ki = .0;
+float ki = .3;
+//float ki = 0;
 float kd = .5;
 
 float k = .00045;  // overall gain
@@ -55,9 +56,15 @@ void loop() {
 
   // serial input sets the reference pwm to power the reference motor
   while (Serial.available() > 0) {
+    
     int inputpwm = Serial.parseInt();
     if (Serial.read() == '\n') {
-      refpwm = refpwm + inputpwm;
+      //refpwm = refpwm + inputpwm;
+      refpwm = startuppwm + 20;
+      offset = offset + inputpwm;
+      if (inputpwm == 0){
+        refpwm = startuppwm;
+      }
     }
   }
 
@@ -90,7 +97,7 @@ void loop() {
 
 
     if (control){
-      error = theta2 - theta1;
+      error = theta2 - theta1+offset;
       //error = rpm2 - rpm1;
       cumerror = constrain(cumerror + error,-maxcum,maxcum);
       derror = error - preverror;

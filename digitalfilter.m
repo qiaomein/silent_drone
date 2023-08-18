@@ -4,9 +4,10 @@ close all; clear; clc;
 
 %% 
 sr = 500;
-a = .4;
+a = .3;
 T = 1/sr;
 h = tf(1,[1, -a],T);
+figure;
 bode(h)
 
 %%
@@ -19,8 +20,7 @@ td = tf(n,d);
 thetaf = tf(2081.405,[tau-Td 1 0])*td;
 
 kp = 1;
-ki = .1;
-ki = 0;
+ki = 0.3;
 kd = .5;
 
 K = .00045;
@@ -48,11 +48,11 @@ rlocus(cltf)
 figure;
 step(cltf)
 
-
-
-t = 0:T:100;
+rpm = 4000;
+krpm = rpm/60*360; % now degrees/s
+t = 0:T:50;
 u = awgn(t*90,1);
-u = t*90 + sin(1*t);
+u = t*krpm + 50*sin(1*t);
 figure;
 y = lsim(cltf,u,t).';
 lsimplot(cltf,u,t)
@@ -60,5 +60,6 @@ title("Ramp Response")
 
 figure;
 plot(t,y-u);
+title("phase error")
 
 

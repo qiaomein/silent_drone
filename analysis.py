@@ -21,7 +21,7 @@ def close():
     plt.close("all")
     
     
-filename = "1_4000_pdcontrol_mid_wronggain.csv" ################
+filename = "1_4000_pidcontrol_mid.csv" ################
 
 rawdata = load(filename)
 
@@ -50,7 +50,7 @@ for x in np.arange(15,20,.2):
 #%%
 
 plt.figure()
-x = 15
+x = 0
 a,b = [x,x+10]
 tplotcut = tplot[tplot < b]
 tach1cut = tach1[tplot < b]
@@ -67,5 +67,6 @@ plt.legend(["tach1","tach2"])
 
 plt.figure()
 plt.plot(tplot,error)
+plt.ylim([-90,90])
 # %%
 
