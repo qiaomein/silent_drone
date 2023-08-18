@@ -19,7 +19,7 @@ float error, cumerror, preverror, derror, theta1, theta2;
 unsigned long t, tprior, dt, dtxor, d0xor;  // for tracking loop time
 bool reset1, reset2;
 
-int refpwm = startuppwm + 20;
+int refpwm = startuppwm + 21;
 bool control = true;
 
 // volatile variables

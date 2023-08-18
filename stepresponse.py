@@ -51,7 +51,8 @@ print(f"Reading until t={timeframe}s")
 t = 0
 rawdata = []
 flag = True
-
+print("logging now!")
+time.sleep(3)
 while t < timeframe*1e6: # in microseconds
     
     data = arduino.readline()
@@ -91,13 +92,18 @@ bias = rpmcut[0]
 k = (rpmcut[-1]-bias)/15
 
 plt.figure()
-response = rpmcut-bias
-u =  k*(refcut-refcut[0])
-plt.plot(tplotcut, response)
-plt.plot(tplotcut, u)
-plt.axhline(.63*u[-1])
+response = (rpmcut-bias)*1.6
+u =  k*(refcut-refcut[0])*1.6
 tau = tplotcut[response>=.63*u[-1]][0]- tplotcut[0]
 
+plt.plot(tplotcut, response)
+plt.plot(tplotcut, u)
+#plt.axvline(tplotcut[0]+tau, c = 'red', ls = '--')
+
+plt.xlabel("time [s]")
+plt.ylabel("angular velocity [rpm]")
+plt.title("Step response")
+plt.legend(["Motor response","Input"])
 print("K: ", k, "tau: ", tau)
 
 # %%

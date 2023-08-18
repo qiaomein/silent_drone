@@ -11,7 +11,7 @@ const int timeout = 1;   // seconds before rpm = 0
 const int startuppwm = 31933;
 const float alpha = .3;
 const int maxrotations = 5000;
-const int maxcum = 5e6;
+const int maxcum = 5e9;
 
 // declarations
 int pwm2, pwmphasereading, pwmphase, tpwm;
@@ -19,7 +19,7 @@ float error, cumerror, preverror, derror, theta1, theta2;
 unsigned long t, tprior, dt, dtxor, d0xor;  // for tracking loop time
 bool reset1, reset2;
 
-int refpwm = startuppwm + 4;
+int refpwm = startuppwm + 4+18;
 bool control = true;
 
 // volatile variables
@@ -33,10 +33,10 @@ int reading2, reading4, reading1;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Speed control
 float kp = 1;
-float ki = .4;
+float ki = .7;
 float kd = 0;
 
-float k = .00055;  // overall gain
+float k = .0055;  // overall gain
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -83,13 +83,13 @@ void loop() {
 
 
 
-    if (control){
-      //error = theta2 - theta1;
-      error = rpm2 - rpm1;
-      cumerror = constrain(cumerror + error,-maxcum,maxcum);
-      pwm2 = refpwm + k*(kp * error + ki*dt*1e-6*cumerror);
-    }
-    
+
+    //error = theta2 - theta1;
+    error = rpm2 - rpm1;
+    cumerror = constrain(cumerror + error, -maxcum, maxcum);
+    pwm2 = refpwm + k * (kp * error + ki * dt * 1e-6 * cumerror);
+
+
 
 
     pwm2 = constrain(pwm2, startuppwm - 10, startuppwm + 50);
@@ -100,19 +100,19 @@ void loop() {
     dt = t - tprior;
     tprior = t;
     preverror = error;
-    theta2 = theta2 + rpm2*6*dt*1e-6;
-    theta1 = theta1 + rpm1*6*dt*1e-6;
-
-    
+    theta2 = theta2 + rpm2 * 6 * dt * 1e-6;
+    theta1 = theta1 + rpm1 * 6 * dt * 1e-6;
 
 
-    if (theta2 >= maxrotations*360){
+
+
+    if (theta2 >= maxrotations * 360) {
       reset1 = !reset1;
       theta2 = 0;
     }
 
 
-    if (theta1 > maxrotations*360){
+    if (theta1 > maxrotations * 360) {
       reset2 = !reset2;
       theta1 = 0;
     }
@@ -166,5 +166,3 @@ void startMotors() {
   drive(motor4pin, startuppwm, pwmfreq);
   delay(4000);
 }
-
-

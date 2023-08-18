@@ -19,13 +19,18 @@ td = tf(n,d);
 thetaf = tf(2081.405,[tau-Td 1 0])*td;
 
 kp = 1;
-ki = .00;
+ki = .1;
+ki = 0;
 kd = .5;
 
-K = .0004;
+K = .00045;
 
 
 gc = K*(pid(kp,ki,kd)); % pd controller
+
+Tc = .01;
+a = 2;
+%gc = K*(tf([Tc 1],[a*Tc 1]));
 
 oltf = thetaf*gc
 
@@ -46,7 +51,8 @@ step(cltf)
 
 
 t = 0:T:100;
-u = awgn(t*90,5);
+u = awgn(t*90,1);
+u = t*90 + sin(1*t);
 figure;
 y = lsim(cltf,u,t).';
 lsimplot(cltf,u,t)

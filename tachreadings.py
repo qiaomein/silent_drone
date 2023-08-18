@@ -6,10 +6,20 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import fft
 
+
+def xor(x, y):
+    n = len(x)
+    a = []
+    for i in range(n):
+        ans = int(x[i]) ^ int(y[i])
+        a.append(ans)
+    return a
+
+
 #### SETTINGS #########
-timeframe = 90  # seconds to record
+timeframe = 50  # seconds to record
 port_name = "COM7"
-baudrate = 115200
+baudrate = 2000000
 interval = 5
 
 ##########################
@@ -47,62 +57,40 @@ def trigger(t_micro):
 print(f"Reading until t={timeframe}s")
 t = 0
 rawdata = []
+print("LOGGING!")
 
 while t < timeframe * 1e6:  # in microseconds
 
     data = arduino.readline()
     Sdata = data.decode().strip().split(",")
-    # t, tach2, tach4, pwm, error, cumerror, rpm2, rpm4 = list(map(float,Sdata))
-    # print(Sdata)
     try:
-        t, tach2, tach4, pwm, error, rpm2, rpm4 = list(map(float, Sdata))
+        t, tach1, tach2, pwm2, rpm1, rpm2, sr, error = list(map(float, Sdata))
     except:
-        t, tach2, tach4, pwm, error, rpm2, rpm4 = [0] * 7
+        t, tach1, tach2, pwm2, rpm1, rpm2, sr, error = [0] * 8
         print("except!")
-    cmd = "testing"
-    if trigger(t):
-        print("w_ref: ", w_ref)
-        # arduino.write(cmd.encode())
-    rawdata.append([t, tach2, tach4])  # time, pwm, error, cumerror, rpm2, rpm4
 
-    # print(t)
+    rawdata.append([t, tach1, tach2, pwm2, rpm1, rpm2, sr, error])  # time, pwm, error, cumerror, rpm2, rpm4
 
-# arduino.write("0\r".encode())
 rawdata = np.array(rawdata)
+print("DONE")
+
+tplot, tach1, tach2, pwm2, rpm1, rpm2, sr, error= [rawdata[:,i] for i in range(8)]
+tplot = tplot - tplot[0]
 # %%
 
+
 plt.figure()
-da = 3500
-a, b = [da, da + 500]
-tPlot = rawdata[a:b, 0] * 1e-6
-tach2 = rawdata[a:b, 1]
-tach4 = rawdata[a:b, 2]
-plt.plot(tPlot, tach2, tPlot, tach4)
-plt.xlabel("time [s]");
+a,b = [0,20]
+tplotcut = tplot[tplot < b]
+tach1cut = tach1[tplot < b]
+tach2cut = tach2[tplot< b]
+tach1cut = tach1cut[tplotcut> a]
+tach2cut = tach2cut[tplotcut > a]
+tplotcut = tplotcut[tplotcut > a]
+
+
+plt.plot(tplotcut, tach1cut, tplotcut, tach2cut)
+plt.xlabel("time [s]")
 plt.ylabel("tach readings")
-plt.legend(["tach2", "tach4"])
+plt.legend(["tach1", "tach2"])
 
-plt.figure()
-plt.plot(tPlot, tach2)
-plt.title("tach2")
-
-plt.figure()
-plt.plot(tPlot, tach4)
-plt.title("tach4")
-
-
-def xor(x, y):
-    n = len(x)
-    a = []
-    for i in range(n):
-        ans = int(x[i]) ^ int(y[i])
-        a.append(ans)
-    return a
-
-
-x = xor(tach2, tach4)
-
-plt.figure()
-plt.plot(tPlot, x)
-plt.title("XOR")
-# %%
