@@ -1,3 +1,6 @@
+clear all;
+close all;
+
 process_audio_files();
 
 function process_audio_files()
@@ -7,37 +10,44 @@ function process_audio_files()
     for file_idx = 1:length(files)
         filename = files(file_idx).name;
         filepath = fullfile(folder_path, filename);
+        % filename
 
         % Read audio file
         [audio_data, sample_rate] = audioread(filepath);
 
         audio_data = audio_data(:, 1);
 
-        N = length(audio_data);
+        cutoff_freq = 200;
+        hpFilt = designfilt('highpassiir', 'StopbandFrequency', cutoff_freq-150, 'PassbandFrequency', cutoff_freq, ...
+        'StopbandAttenuation', 40, 'PassbandRipple', 1, 'SampleRate', sample_rate, 'DesignMethod', 'butter');
+    
+        filtered_audio = filtfilt(hpFilt, audio_data);
+
+        N = length(filtered_audio);
         t = (0:N-1)/sample_rate;
 
         % Compute RMS
-        rms_value = sqrt(mean(audio_data.^2));
+        rms_value = sqrt(mean(filtered_audio.^2));
         % disp(['RMS value of ', filename, ' is: ', num2str(rms_value)]);
 
         % Plot raw data
-        plot_raw(audio_data, sample_rate, filename);
+        plot_raw(filtered_audio, sample_rate, filename);
 
         % Plot FFT
-        plot_fft(audio_data, sample_rate, filename);
+        plot_fft(filtered_audio, sample_rate, filename);
 
         % Plot spectrogram
-        figure;
-        spectrogram(audio_data(:, 1),256,250,256,sample_rate,'yaxis');
-        title("Spectrogram (" + filename + ")")
+        % figure;
+        % spectrogram(filtered_audio(:, 1),256,250,256,sample_rate,'yaxis');
+        % title("Spectrogram (" + filename + ")")
         
 
         w = hanning(N, 'periodic');
 
-        figure;
-        periodogram(audio_data, w, N, sample_rate, 'power')
+        % figure;
+        % periodogram(filtered_audio, w, N, sample_rate, 'power')
         
-        I = audio_data.^2;
+        I = filtered_audio.^2;
 
         avg_I = mean(I);
 
@@ -54,6 +64,7 @@ function process_audio_files()
 end
 
 function plot_raw(audio, rate, filename)
+
     t = (0:length(audio)-1) / rate;
     figure;
     plot(t, audio);
@@ -78,6 +89,7 @@ function plot_fft(audio, rate, filename)
     xlabel('Frequency (Hz)');
     ylabel('Amplitude');
     title(['Frequency Spectrum (', filename, ')']);
+    ylim([0, 2*10^-3])
 
     [peak_val, peak_idx] = max(P);
     disp(['The most common frequency for file ', filename, ' is ', num2str(f(peak_idx)), ' Hz']);
